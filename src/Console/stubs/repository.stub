@@ -1,0 +1,9 @@
+<?php
+
+namespace DummyNamespace;
+
+use Prophets\DrupalJsonApi\Repositories\JsonApiBaseRepository;
+
+class DummyClass extends JsonApiBaseRepository
+{
+}
