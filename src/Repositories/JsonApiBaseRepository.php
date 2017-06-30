@@ -194,7 +194,7 @@ class JsonApiBaseRepository implements BaseRepository
      * @param array $map
      * @return Collection
      */
-    protected function mapResourcesToCollection(array $resources, array $map = [])
+   protected function mapResourcesToCollection(array $resources, array $map = [])
     {
         $collection = new Collection();
 
@@ -210,12 +210,14 @@ class JsonApiBaseRepository implements BaseRepository
                 return new $modelClass;
             };
         } else {
-            $model = $this->getNewModel();
+            $model = $this->model;
         }
 
         foreach ($resources as $resource) {
             if (is_callable($model)) {
                 $model = $model($resource);
+            } else {
+                $model = new $model;
             }
             $collection[] = $this->mapResourceToModel($model, $resource);
         }
