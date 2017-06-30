@@ -215,11 +215,11 @@ class JsonApiBaseRepository implements BaseRepository
 
         foreach ($resources as $resource) {
             if (is_callable($model)) {
-                $model = $model($resource);
+                $newModel = $model($resource);
             } else {
-                $model = new $model;
+                $newModel = new $model;
             }
-            $collection[] = $this->mapResourceToModel($model, $resource);
+            $collection[] = $this->mapResourceToModel($newModel, $resource);
         }
         return $collection;
     }
