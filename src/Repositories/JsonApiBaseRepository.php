@@ -22,6 +22,13 @@ class JsonApiBaseRepository implements BaseRepository
     use Concerns\HasGlobalScopes;
 
     /**
+     * The array of booted repositories.
+     *
+     * @var array
+     */
+    protected static $booted = [];
+
+    /**
      * @var Model
      */
     protected $model;
@@ -40,6 +47,47 @@ class JsonApiBaseRepository implements BaseRepository
     {
         $this->model = $model;
         $this->apiBaseUrl = $apiBaseUrl ?: config('drupal-jsonapi.base_url');
+
+        $this->bootIfNotBooted();
+    }
+
+    /**
+     * Check if the repository needs to be booted and if so, do it.
+     *
+     * @return void
+     */
+    protected function bootIfNotBooted()
+    {
+        if (! isset(static::$booted[static::class])) {
+            static::$booted[static::class] = true;
+            static::boot();
+        }
+    }
+
+    /**
+     * The "booting" method of the repository.
+     *
+     * @return void
+     */
+    protected static function boot()
+    {
+        static::bootTraits();
+    }
+
+    /**
+     * Boot all of the bootable traits on the repository.
+     *
+     * @return void
+     */
+    protected static function bootTraits()
+    {
+        $class = static::class;
+
+        foreach (class_uses_recursive($class) as $trait) {
+            if (method_exists($class, $method = 'boot'.class_basename($trait))) {
+                forward_static_call([$class, $method]);
+            }
+        }
     }
 
     /**
