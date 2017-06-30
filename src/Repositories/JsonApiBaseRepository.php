@@ -152,6 +152,10 @@ class JsonApiBaseRepository implements BaseRepository
             . '/' . $relatedModel->getId()
             . '/' . $relation->getName()
         );
+
+        foreach ($this->getGlobalScopes() as $id => $scope) {
+            $requestBuilder->withGlobalScope($id, $scope);
+        }
         $resourceFields = [];
 
         if ($relation instanceof HasManyDirty) {
