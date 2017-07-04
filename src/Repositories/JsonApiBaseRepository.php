@@ -246,7 +246,7 @@ class JsonApiBaseRepository implements BaseRepository
      * @param array $map
      * @return Collection
      */
-   protected function mapResourcesToCollection(array $resources, array $map = [])
+    protected function mapResourcesToCollection(array $resources, array $map = [])
     {
         $collection = new Collection();
 
