@@ -445,7 +445,7 @@ class JsonApiBaseRepository implements BaseRepository
 
         if (! $response->isSuccessfulDocument([200])
             || ! $response->document()->hasAnyPrimaryResources()) {
-            return null;
+            return new Collection();
         }
 
         if ($relation instanceof HasManyDirty) {
