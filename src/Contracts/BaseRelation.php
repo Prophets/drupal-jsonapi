@@ -14,11 +14,6 @@ interface BaseRelation
     /**
      * @return Model
      */
-    public function getNewModel(): Model;
-
-    /**
-     * @return Model
-     */
     public function getRelatedModel(): Model;
 
     /**

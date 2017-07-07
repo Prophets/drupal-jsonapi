@@ -2,7 +2,7 @@
 
 namespace Prophets\DrupalJsonApi\Relations;
 
-class HasOne extends Relation
+class HasOne extends HasOneManySingle
 {
     /**
      * @return \Prophets\DrupalJsonApi\Model|null

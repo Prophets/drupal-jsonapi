@@ -11,10 +11,6 @@ abstract class Relation implements BaseRelation
     /**
      * @var string
      */
-    protected $repositoryClass;
-    /**
-     * @var string
-     */
     protected $name;
     /**
      * @var Model
@@ -29,13 +25,11 @@ abstract class Relation implements BaseRelation
      * Relation constructor.
      * @param Model $relatedModel
      * @param string $name
-     * @param string $repositoryClass
      */
-    public function __construct(Model $relatedModel, string $name, string $repositoryClass)
+    public function __construct(Model $relatedModel, string $name)
     {
         $this->relatedModel = $relatedModel;
         $this->name = $name;
-        $this->repositoryClass = $repositoryClass;
     }
 
     /**
@@ -43,24 +37,7 @@ abstract class Relation implements BaseRelation
      */
     public function getRepository(): BaseRepository
     {
-        if ($this->repository === null) {
-            $repository = app($this->repositoryClass);
-
-            if (! $repository instanceof BaseRepository) {
-                throw new \RuntimeException('Class does not implement BaseRepository.');
-            }
-            $this->repository = $repository;
-        }
-
-        return $this->repository;
-    }
-
-    /**
-     * @return Model
-     */
-    public function getNewModel(): Model
-    {
-        return $this->getRepository()->getNewModel();
+        return call_user_func([$this->relatedModel, 'getRepository']);
     }
 
     /**

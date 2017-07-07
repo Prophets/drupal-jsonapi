@@ -3,7 +3,7 @@
 namespace Prophets\DrupalJsonApi\Models\Concerns;
 
 use Prophets\DrupalJsonApi\Relations\HasMany;
-use Prophets\DrupalJsonApi\Relations\HasManyDirty;
+use Prophets\DrupalJsonApi\Relations\HasManyMixed;
 use Prophets\DrupalJsonApi\Relations\HasOne;
 
 trait HasRelationships
@@ -85,33 +85,32 @@ trait HasRelationships
     }
 
     /**
-     * @param $repository
+     * @param string|array $modelClass
      * @return HasOne
      */
-    public function hasOne($repository)
+    public function hasOne($modelClass)
     {
-        $relation = new HasOne($this, $this->getRelationName(), $repository);
+        $relation = new HasOne($this, $this->getRelationName(), $modelClass);
         return $relation;
     }
 
     /**
-     * @param $repository
+     * @param string|array $modelClass
      * @return HasMany
      */
-    public function hasMany($repository)
+    public function hasMany($modelClass)
     {
-        $relation = new HasMany($this, $this->getRelationName(), $repository);
+        $relation = new HasMany($this, $this->getRelationName(), $modelClass);
         return $relation;
     }
 
     /**
-     * @param $repository
-     * @param $classList
-     * @return HasManyDirty
+     * @param array $classList
+     * @return HasManyMixed
      */
-    public function hasManyDirty($repository, $classList)
+    public function hasManyMixed(array $classList)
     {
-        $relation = new HasManyDirty($this, $this->getRelationName(), $repository);
+        $relation = new HasManyMixed($this, $this->getRelationName());
         $relation->setClassList($classList);
         return $relation;
     }

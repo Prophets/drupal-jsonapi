@@ -38,6 +38,7 @@ class CacheBaseDecorator implements BaseRepository
         $this->cache = app(CacheRepository::class);
         $this->cacheTime = app(ConfigRepository::class)->get('cache.time', 60);
         $this->repository = $repository;
+        $this->entityName = call_user_func([$repository->getNewModel(), 'getResourceName']);
     }
 
     /**

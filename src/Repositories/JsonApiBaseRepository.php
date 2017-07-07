@@ -4,9 +4,9 @@ namespace Prophets\DrupalJsonApi\Repositories;
 
 use Prophets\DrupalJsonApi\Collection;
 use Prophets\DrupalJsonApi\Contracts\BaseRelation;
+use Prophets\DrupalJsonApi\Contracts\BaseRelationMixed;
+use Prophets\DrupalJsonApi\Contracts\BaseRelationSingle;
 use Prophets\DrupalJsonApi\Contracts\BaseRepository;
-use Prophets\DrupalJsonApi\Relations\HasMany;
-use Prophets\DrupalJsonApi\Relations\HasManyDirty;
 use Prophets\DrupalJsonApi\Request\DrupalJsonApiRequestBuilder;
 use Prophets\DrupalJsonApi\Model;
 use GuzzleHttp\Psr7\Request;
@@ -14,7 +14,6 @@ use Http\Adapter\Guzzle6\Client;
 use Illuminate\Support\Arr;
 use WoohooLabs\Yang\JsonApi\Client\JsonApiClient;
 use WoohooLabs\Yang\JsonApi\Response\JsonApiResponse;
-use WoohooLabs\Yang\JsonApi\Schema\Document;
 use WoohooLabs\Yang\JsonApi\Schema\ResourceObject;
 
 class JsonApiBaseRepository implements BaseRepository
@@ -40,12 +39,16 @@ class JsonApiBaseRepository implements BaseRepository
 
     /**
      * JsonApiBaseRepository constructor.
-     * @param Model $model
+     * @param Model|string $model
      * @param null|string $apiBaseUrl
      */
     public function __construct(Model $model, $apiBaseUrl = null)
     {
-        $this->model = $model;
+        $this->model = is_string($model) ? new $model : $model;
+
+        if (! $this->model instanceof Model) {
+            throw new \InvalidArgumentException('Model must be an instance of ' . Model::class);
+        }
         $this->apiBaseUrl = $apiBaseUrl ?: config('drupal-jsonapi.base_url');
 
         $this->bootIfNotBooted();
@@ -156,9 +159,12 @@ class JsonApiBaseRepository implements BaseRepository
         foreach ($this->getGlobalScopes() as $id => $scope) {
             $requestBuilder->withGlobalScope($id, $scope);
         }
-        $resourceFields = [];
+        $resourceFields = [
+            'fields' => [],
+            'includes' => []
+        ];
 
-        if ($relation instanceof HasManyDirty) {
+        if ($relation instanceof BaseRelationMixed) {
             foreach ($relation->getClassList() as $modelClass) {
                 $model = new $modelClass;
 
@@ -167,8 +173,10 @@ class JsonApiBaseRepository implements BaseRepository
                 }
                 $resourceFields = array_merge_recursive($resourceFields, $this->getResourceFields($model));
             }
+        } elseif ($relation instanceof BaseRelationSingle) {
+            $resourceFields = $this->getResourceFields($relation->getNewModel());
         } else {
-            $resourceFields = $this->getResourceFields($this->model);
+            throw new \RuntimeException('Relation is not implemented.');
         }
         $requestBuilder->setJsonApiFields($resourceFields['fields']);
         $requestBuilder->setJsonApiIncludes($resourceFields['includes']);
@@ -219,12 +227,12 @@ class JsonApiBaseRepository implements BaseRepository
                 if (count($resourceMap) > 0) {
                     $modelRelation = $model->$fieldName();
 
-                    if ($relationship->isToManyRelationship() && $modelRelation instanceof HasMany) {
+                    if ($relationship->isToManyRelationship()) {
                         $model->setRelation(
                             $fieldName,
                             $this->mapResourcesToCollection(
                                 $relationship->resources(),
-                                $modelRelation instanceof HasManyDirty ? $modelRelation->getClassList() : []
+                                $modelRelation
                             )
                         );
                     } else {
@@ -243,24 +251,31 @@ class JsonApiBaseRepository implements BaseRepository
     /**
      * Map primary resources from the JsonApi response document to models defined in the map list.
      * @param array $resources
-     * @param array $map
+     * @param null|BaseRelation $relation
      * @return Collection
      */
-    protected function mapResourcesToCollection(array $resources, array $map = [])
+    protected function mapResourcesToCollection(array $resources, $relation = null)
     {
         $collection = new Collection();
 
-        if (! empty($map)) {
-            $model = function ($resource) use ($map) {
-                $modelClass = Arr::first($map, function ($model) use ($resource) {
-                    return $model::getResourceName() == $resource->type();
-                });
+        if ($relation instanceof BaseRelation) {
+            if ($relation instanceof BaseRelationMixed) {
+                $map = $relation->getClassList();
+                $model = function ($resource) use ($map) {
+                    $modelClass = Arr::first($map, function ($model) use ($resource) {
+                        return $model::getResourceName() == $resource->type();
+                    });
 
-                if (! $modelClass) {
-                    return $this->getNewModel();
-                }
-                return new $modelClass;
-            };
+                    if (! $modelClass) {
+                        return null;
+                    }
+                    return new $modelClass;
+                };
+            } elseif ($relation instanceof BaseRelationSingle) {
+                $model = $relation->getNewModel();
+            } else {
+                throw new \RuntimeException('Relation not implemented.');
+            }
         } else {
             $model = $this->model;
         }
@@ -271,7 +286,9 @@ class JsonApiBaseRepository implements BaseRepository
             } else {
                 $newModel = new $model;
             }
-            $collection[] = $this->mapResourceToModel($newModel, $resource);
+            if ($newModel !== null) {
+                $collection[] = $this->mapResourceToModel($newModel, $resource);
+            }
         }
         return $collection;
     }
@@ -303,7 +320,7 @@ class JsonApiBaseRepository implements BaseRepository
             $relation = $model->$relationField();
 
             if ($relation instanceof BaseRelation) {
-                $relationModels = $relation instanceof HasManyDirty ? array_map(function ($modelClass) {
+                $relationModels = $relation instanceof BaseRelationMixed ? array_map(function ($modelClass) {
                     return new $modelClass;
                 }, $relation->getClassList()) : [$relation->getNewModel()];
 
@@ -340,17 +357,17 @@ class JsonApiBaseRepository implements BaseRepository
     /**
      * Map primary resource from the JsonApi response to a collection of models.
      * @param JsonApiResponse $response
-     * @param array $map
+     * @param null|BaseRelation $relation
      * @return Collection
      */
-    protected function responseToCollection(JsonApiResponse $response, array $map = [])
+    protected function responseToCollection(JsonApiResponse $response, $relation = null)
     {
         if (! $response->isSuccessfulDocument([200])
             || ! $response->document()->hasAnyPrimaryResources()) {
             return new Collection();
         }
 
-        return $this->mapResourcesToCollection($response->document()->primaryResources(), $map);
+        return $this->mapResourcesToCollection($response->document()->primaryResources(), $relation);
     }
 
     /**
@@ -448,10 +465,7 @@ class JsonApiBaseRepository implements BaseRepository
             return new Collection();
         }
 
-        if ($relation instanceof HasManyDirty) {
-            return $this->responseToCollection($response, $relation->getClassList());
-        }
-        return $this->responseToCollection($response);
+        return $this->responseToCollection($response, $relation);
     }
 
     /**

@@ -2,13 +2,7 @@
 
 namespace Prophets\DrupalJsonApi\Relations;
 
-class HasMany extends Relation
+class HasMany extends HasOneManySingle
 {
-    /**
-     * @return \Prophets\DrupalJsonApi\Collection
-     */
-    public function getResults()
-    {
-        return $this->getRepository()->getForRelation($this);
-    }
+    use Concerns\RelationCollectionResult;
 }

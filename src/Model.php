@@ -4,8 +4,9 @@ namespace Prophets\DrupalJsonApi;
 
 use ArrayAccess;
 use Illuminate\Database\Eloquent\Concerns\HasTimestamps;
+use Prophets\DrupalJsonApi\Contracts\BaseRepository;
 
-class Model implements ArrayAccess
+abstract class Model implements ArrayAccess
 {
     use Models\Concerns\HasAttributes;
     use Models\Concerns\HasRelationships;
@@ -31,6 +32,16 @@ class Model implements ArrayAccess
      * @var string
      */
     protected static $resourceName = '';
+
+    /**
+     * @var string
+     */
+    protected static $resourceRepositoryClassName = '';
+
+    /**
+     * @var \Prophets\DrupalJsonApi\Contracts\BaseRepository
+     */
+    protected static $resourceRepository = null;
 
     /**
      * List of the resource's field to be collected from the repository.
@@ -72,6 +83,31 @@ class Model implements ArrayAccess
         }
 
         return static::$resourceName;
+    }
+
+    /**
+     * @return string
+     */
+    public static function getRepositoryClassName(): string
+    {
+        if (empty(static::$resourceRepositoryClassName)) {
+            throw new \RuntimeException('Repository class name was not set.');
+        }
+
+        return static::$resourceRepositoryClassName;
+    }
+
+    /**
+     * @return \Prophets\DrupalJsonApi\Contracts\BaseRepository
+     */
+    public static function getRepository(): BaseRepository
+    {
+        if (static::$resourceRepository === null) {
+            $repositoryClassName = static::getRepositoryClassName();
+            static::$resourceRepository = app($repositoryClassName);
+        }
+
+        return static::$resourceRepository;
     }
 
     /**

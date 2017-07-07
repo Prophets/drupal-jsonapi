@@ -34,16 +34,16 @@ class DrupalJsonApiServiceProvider extends ServiceProvider
     {
         $repositoryFactory = new RepositoryFactory(config('drupal-jsonapi.use_cache'));
         $this->app->singleton(RepositoryFactory::class, $repositoryFactory);
-        $repositories = config('drupal-jsonapi.repositories', []);
+        $repositories = config('drupal-jsonapi.repository_models', []);
 
         /**
          * Register repositories from config.
          */
-        foreach ($repositories as $repositoryClassName => $modelClass) {
+        foreach ($repositories as $modelClass) {
+            $repositoryClassName = call_user_func($modelClass . '::getRepositoryClassName');
             $this->app->bind(
                 $repositoryClassName,
                 function () use ($repositoryFactory, $repositoryClassName, $modelClass) {
-
                     return $repositoryFactory->create($modelClass, $repositoryClassName);
                 }
             );
