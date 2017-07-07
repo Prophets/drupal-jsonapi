@@ -216,7 +216,7 @@ class JsonApiBaseRepository implements BaseRepository
      */
     protected function mapResourceToModel(Model $model, ResourceObject $resource)
     {
-        $model->setRawAttributes($resource->attributes(), true);
+        $model->populate($resource->attributes());
         $model->setId($resource->id());
 
         foreach ($model->getFields() as $fieldName) {
