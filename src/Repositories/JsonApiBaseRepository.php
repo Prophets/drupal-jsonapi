@@ -341,15 +341,16 @@ class JsonApiBaseRepository implements BaseRepository
     /**
      * Map primary resource from the JsonApi response to our model.
      * @param JsonApiResponse $response
+     * @param null|BaseRelationSingle $relation
      * @return Model
      */
-    protected function responseToModel(JsonApiResponse $response)
+    protected function responseToModel(JsonApiResponse $response, $relation = null)
     {
         if (! $response->isSuccessfulDocument([200])
             || ! $response->document()->hasAnyPrimaryResources()) {
             return null;
         }
-        $model = $this->getNewModel();
+        $model = $relation ? $relation->getNewModel() : $this->getNewModel();
 
         return $this->mapResourceToModel($model, $response->document()->primaryResource());
     }
@@ -403,7 +404,7 @@ class JsonApiBaseRepository implements BaseRepository
     {
         $response = $this->executeRequest($this->newRelationRequestBuilder($relation));
 
-        return $this->responseToModel($response);
+        return $this->responseToModel($response, $relation);
     }
 
     /**
