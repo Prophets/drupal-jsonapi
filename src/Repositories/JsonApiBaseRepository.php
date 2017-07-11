@@ -201,7 +201,7 @@ class JsonApiBaseRepository implements BaseRepository
      */
     protected function executeRequest(DrupalJsonApiRequestBuilder $requestBuilder)
     {
-        $client = Client::createWithConfig([]);
+        $client = new Client(app(\GuzzleHttp\Client::class));
         $jsonApiClient = new JsonApiClient($client);
         $request = $requestBuilder->getRequestWithScopes();
 
