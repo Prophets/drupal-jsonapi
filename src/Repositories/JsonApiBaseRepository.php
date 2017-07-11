@@ -219,7 +219,9 @@ class JsonApiBaseRepository implements BaseRepository
         $model->populate($resource->attributes());
         $model->setId($resource->id());
 
-        foreach ($model->getFields() as $fieldName) {
+        foreach ($model->getIncludes() as $fieldName) {
+            $relationValue = null;
+            
             if (($relationship = $resource->relationship($fieldName)) !== null) {
                 $relationResource = null;
                 $resourceMap = $relationship->resourceMap();
@@ -228,21 +230,19 @@ class JsonApiBaseRepository implements BaseRepository
                     $modelRelation = $model->$fieldName();
 
                     if ($relationship->isToManyRelationship()) {
-                        $model->setRelation(
-                            $fieldName,
-                            $this->mapResourcesToCollection(
-                                $relationship->resources(),
-                                $modelRelation
-                            )
+                        $relationValue = $this->mapResourcesToCollection(
+                            $relationship->resources(),
+                            $modelRelation
                         );
                     } else {
-                        $model->setRelation(
-                            $fieldName,
-                            $this->mapResourceToModel($modelRelation->getNewModel(), $relationship->resource())
+                        $relationValue = $this->mapResourceToModel(
+                            $modelRelation->getNewModel(),
+                            $relationship->resource()
                         );
                     }
                 }
             }
+            $model->setRelation($fieldName, $relationValue);
         }
 
         return $model;
