@@ -4,6 +4,7 @@ namespace Prophets\DrupalJsonApi\Repositories;
 
 use Prophets\DrupalJsonApi\Collection;
 use Prophets\DrupalJsonApi\Contracts\BaseRelation;
+use Prophets\DrupalJsonApi\Contracts\BaseRelationHasMany;
 use Prophets\DrupalJsonApi\Contracts\BaseRelationMixed;
 use Prophets\DrupalJsonApi\Contracts\BaseRelationSingle;
 use Prophets\DrupalJsonApi\Contracts\BaseRepository;
@@ -220,15 +221,14 @@ class JsonApiBaseRepository implements BaseRepository
         $model->setId($resource->id());
 
         foreach ($model->getIncludes() as $fieldName) {
+            $modelRelation = $model->$fieldName();
             $relationValue = null;
-            
+
             if (($relationship = $resource->relationship($fieldName)) !== null) {
                 $relationResource = null;
                 $resourceMap = $relationship->resourceMap();
 
                 if (count($resourceMap) > 0) {
-                    $modelRelation = $model->$fieldName();
-
                     if ($relationship->isToManyRelationship()) {
                         $relationValue = $this->mapResourcesToCollection(
                             $relationship->resources(),
@@ -241,6 +241,8 @@ class JsonApiBaseRepository implements BaseRepository
                         );
                     }
                 }
+            } elseif ($modelRelation instanceof BaseRelationHasMany) {
+                $relationValue = new Collection();
             }
             $model->setRelation($fieldName, $relationValue);
         }
