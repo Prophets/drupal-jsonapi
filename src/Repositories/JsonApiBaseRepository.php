@@ -160,10 +160,6 @@ class JsonApiBaseRepository implements BaseRepository
         foreach ($this->getGlobalScopes() as $id => $scope) {
             $requestBuilder->withGlobalScope($id, $scope);
         }
-        $resourceFields = [
-            'fields' => [],
-            'includes' => []
-        ];
 
         if ($relation instanceof BaseRelationMixed) {
             foreach ($relation->getClassList() as $modelClass) {
@@ -172,7 +168,7 @@ class JsonApiBaseRepository implements BaseRepository
                 if (! $model instanceof Model) {
                     throw new \InvalidArgumentException('Model class must be instance of ' . Model::class);
                 }
-                $resourceFields = array_merge_recursive($resourceFields, $this->getResourceFields($model));
+                $this->getResourceFields($model, null, $resourceFields);
             }
         } elseif ($relation instanceof BaseRelationSingle) {
             $resourceFields = $this->getResourceFields($relation->getNewModel());
@@ -300,21 +296,23 @@ class JsonApiBaseRepository implements BaseRepository
      * Retrieve 'fields' and 'includes' for a model and it's relations.
      * @param Model $model
      * @param null $field
+     * @param array $fields
      * @return array
      */
-    protected function getResourceFields(Model $model, $field = null)
+    protected function getResourceFields(Model $model, $field = null, &$fields = null)
     {
-        $fields = [
-            'fields' => [
-                $model->getResourceName() => array_unique(array_merge(
-                    $model->getFields(),
-                    $model->getIncludes()
-                )),
-            ],
-            'includes' => array_map(function ($value) use ($field) {
-                return $field ? $field . '.' . $value : $value;
-            }, $model->getIncludes())
-        ];
+        if (empty($fields)) {
+            $fields = [
+                'fields' => [],
+                'includes' => []
+            ];
+        } elseif (isset($fields['fields'][$model->getResourceName()])) {
+            return $fields;
+        }
+        $fields['fields'][$model->getResourceName()] = $model->getFields();
+        $fields['includes'] = array_unique(array_merge(array_map(function ($value) use ($field) {
+            return $field ? $field . '.' . $value : $value;
+        }, $model->getIncludes()), $fields['includes']));
 
         foreach ($model->getIncludes() as $relationField) {
             if (! method_exists($model, $relationField)) {
@@ -328,12 +326,7 @@ class JsonApiBaseRepository implements BaseRepository
                 }, $relation->getClassList()) : [$relation->getNewModel()];
 
                 foreach ($relationModels as $relationModel) {
-                    if (! isset($fields['fields'][$relationModel->getResourceName()])) {
-                        $fields = array_merge_recursive(
-                            $fields,
-                            $this->getResourceFields($relationModel, $relationField)
-                        );
-                    }
+                    $this->getResourceFields($relationModel, $relationField, $fields);
                 }
             }
         }
