@@ -241,7 +241,8 @@ class JsonApiBaseRepository implements BaseRepository
                         );
                     }
                 }
-            } elseif ($modelRelation instanceof BaseRelationHasMany) {
+            }
+            if ($relationValue === null && $modelRelation instanceof BaseRelationHasMany) {
                 $relationValue = new Collection();
             }
             $model->setRelation($fieldName, $relationValue);
