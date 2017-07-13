@@ -326,7 +326,11 @@ class JsonApiBaseRepository implements BaseRepository
                 }, $relation->getClassList()) : [$relation->getNewModel()];
 
                 foreach ($relationModels as $relationModel) {
-                    $this->getResourceFields($relationModel, $relationField, $fields);
+                    $this->getResourceFields(
+                        $relationModel,
+                        ($field ? $field . '.' . $relationField : $relationField),
+                        $fields
+                    );
                 }
             }
         }
