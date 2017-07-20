@@ -5,6 +5,7 @@ namespace Prophets\DrupalJsonApi\Models\Concerns;
 use Prophets\DrupalJsonApi\Relations\HasMany;
 use Prophets\DrupalJsonApi\Relations\HasManyMixed;
 use Prophets\DrupalJsonApi\Relations\HasOne;
+use Prophets\DrupalJsonApi\Relations\HasOneMixed;
 
 trait HasRelationships
 {
@@ -91,6 +92,17 @@ trait HasRelationships
     public function hasOne($modelClass)
     {
         $relation = new HasOne($this, $this->getRelationName(), $modelClass);
+        return $relation;
+    }
+
+    /**
+     * @param array $classList
+     * @return HasOneMixed
+     */
+    public function hasOneMixed(array $classList)
+    {
+        $relation = new HasOneMixed($this, $this->getRelationName());
+        $relation->setClassList($classList);
         return $relation;
     }
 

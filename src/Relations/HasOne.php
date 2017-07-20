@@ -2,13 +2,9 @@
 
 namespace Prophets\DrupalJsonApi\Relations;
 
-class HasOne extends HasOneManySingle
+use Prophets\DrupalJsonApi\Contracts\BaseRelationHasOne;
+
+class HasOne extends HasOneManySingle implements BaseRelationHasOne
 {
-    /**
-     * @return \Prophets\DrupalJsonApi\Model|null
-     */
-    public function getResults()
-    {
-        return $this->getRepository()->findForRelation($this);
-    }
+    use Concerns\RelationModelResult;
 }

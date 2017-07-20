@@ -207,12 +207,18 @@ class JsonApiBaseRepository implements BaseRepository
 
     /**
      * Map the JsonApi ResourceObject to an application model.
-     * @param Model $model
      * @param ResourceObject $resource
+     * @param null|Model|BaseRelation $model
      * @return Model
      */
-    protected function mapResourceToModel(Model $model, ResourceObject $resource)
+    protected function mapResourceToModel(ResourceObject $resource, $model = null)
     {
+        if ($model instanceof BaseRelation) {
+            $model = $this->getModelResolverForRelation($model)($resource);
+        }
+        if (! $model instanceof Model) {
+            throw new \RuntimeException('Not a valid Model.');
+        }
         $model->populate($resource->attributes());
         $model->setId($resource->id());
 
@@ -232,8 +238,8 @@ class JsonApiBaseRepository implements BaseRepository
                         );
                     } else {
                         $relationValue = $this->mapResourceToModel(
-                            $modelRelation->getNewModel(),
-                            $relationship->resource()
+                            $relationship->resource(),
+                            $modelRelation
                         );
                     }
                 }
@@ -256,40 +262,49 @@ class JsonApiBaseRepository implements BaseRepository
     protected function mapResourcesToCollection(array $resources, $relation = null)
     {
         $collection = new Collection();
-
-        if ($relation instanceof BaseRelation) {
-            if ($relation instanceof BaseRelationMixed) {
-                $map = $relation->getClassList();
-                $model = function ($resource) use ($map) {
-                    $modelClass = Arr::first($map, function ($model) use ($resource) {
-                        return $model::getResourceName() == $resource->type();
-                    });
-
-                    if (! $modelClass) {
-                        return null;
-                    }
-                    return new $modelClass;
-                };
-            } elseif ($relation instanceof BaseRelationSingle) {
-                $model = $relation->getNewModel();
-            } else {
-                throw new \RuntimeException('Relation not implemented.');
-            }
-        } else {
-            $model = $this->model;
-        }
+        $model = $relation instanceof BaseRelation
+            ? $this->getModelResolverForRelation($relation)
+            : function () {
+                return $this->getNewModel();
+            };
 
         foreach ($resources as $resource) {
-            if (is_callable($model)) {
-                $newModel = $model($resource);
-            } else {
-                $newModel = new $model;
-            }
+            $newModel = $model($resource);
+
             if ($newModel !== null) {
-                $collection[] = $this->mapResourceToModel($newModel, $resource);
+                $collection[] = $this->mapResourceToModel($resource, $newModel);
             }
         }
         return $collection;
+    }
+
+    /**
+     * @param BaseRelation $relation
+     * @return \Closure
+     */
+    protected function getModelResolverForRelation(BaseRelation $relation)
+    {
+        if ($relation instanceof BaseRelationMixed) {
+            $map = $relation->getClassList();
+            $modelResolver = function ($resource) use ($map) {
+                $modelClass = Arr::first($map, function ($model) use ($resource) {
+                    return $model::getResourceName() == $resource->type();
+                });
+
+                if (! $modelClass) {
+                    return null;
+                }
+                return new $modelClass;
+            };
+        } elseif ($relation instanceof BaseRelationSingle) {
+            $modelResolver = function () use ($relation) {
+                return $relation->getNewModel();
+            };
+        } else {
+            throw new \RuntimeException('Relation not implemented.');
+        }
+
+        return $modelResolver;
     }
 
     /**
@@ -355,9 +370,9 @@ class JsonApiBaseRepository implements BaseRepository
             || ! $response->document()->hasAnyPrimaryResources()) {
             return null;
         }
-        $model = $relation ? $relation->getNewModel() : $this->getNewModel();
+        $model = $relation ? $relation : $this->getNewModel();
 
-        return $this->mapResourceToModel($model, $response->document()->primaryResource());
+        return $this->mapResourceToModel($response->document()->primaryResource(), $model);
     }
 
     /**
