@@ -306,13 +306,18 @@ class JsonApiBaseRepository implements BaseRepository
                 'fields' => [],
                 'includes' => []
             ];
-        } elseif (isset($fields['fields'][$model->getResourceName()])) {
+        }
+        if (! $field || ! array_first($fields['includes'], function ($value) use ($field) {
+            return starts_with($value, $field . '.');
+        })) {
+            $fields['includes'] = array_unique(array_merge(array_map(function ($value) use ($field) {
+                return $field ? $field . '.' . $value : $value;
+            }, $model->getIncludes()), $fields['includes']));
+        }
+        if (isset($fields['fields'][$model->getResourceName()])) {
             return $fields;
         }
         $fields['fields'][$model->getResourceName()] = $model->getFields();
-        $fields['includes'] = array_unique(array_merge(array_map(function ($value) use ($field) {
-            return $field ? $field . '.' . $value : $value;
-        }, $model->getIncludes()), $fields['includes']));
 
         foreach ($model->getIncludes() as $relationField) {
             if (! method_exists($model, $relationField)) {
