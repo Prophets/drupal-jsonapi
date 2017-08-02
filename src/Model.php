@@ -103,11 +103,24 @@ abstract class Model implements ArrayAccess
     public static function getRepository(): BaseRepository
     {
         if (static::$resourceRepository === null) {
-            $repositoryClassName = static::getRepositoryClassName();
-            static::$resourceRepository = app($repositoryClassName);
+            $repositoryInterface = static::getRepositoryInterface();
+            static::$resourceRepository = app($repositoryInterface);
         }
 
         return static::$resourceRepository;
+    }
+
+    public static function getRepositoryInterface(): string
+    {
+        $interface = array_first(class_implements(static::getRepositoryClassName()), function ($value) {
+            $modelName = class_basename(static::class);
+            return strpos($value, $modelName);
+        });
+
+        if (! $interface) {
+            throw new \RuntimeException('Repository must have it\'s own interface implemented.');
+        }
+        return $interface;
     }
 
     /**

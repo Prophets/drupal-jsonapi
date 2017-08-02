@@ -79,4 +79,43 @@ class RepositoryMakeCommand extends GeneratorCommand
 
         return $name;
     }
+
+    /**
+     * @inheritdoc
+     */
+    protected function buildClass($name)
+    {
+        $stub = parent::buildClass($name);
+
+        return $this->replaceInterface($stub);
+    }
+
+    /**
+     * Replace the interface.
+     *
+     * @param $stub
+     * @return mixed
+     */
+    protected function replaceInterface($stub)
+    {
+        $interface = sprintf('JsonApi%sInterface', $this->getEntityNameInput());
+
+        return str_replace('DummyInterface', $interface, $stub);
+    }
+
+    /**
+     * Execute command, calling additional commands to create interface and cache decorator.
+     */
+    public function handle()
+    {
+        $this->call('make:drupaljsonapi-interface', [
+            'name' => $this->getEntityNameInput()
+        ]);
+
+        $this->fire();
+
+        $this->call('make:drupaljsonapi-cachedecorator', [
+            'name' => $this->getEntityNameInput()
+        ]);
+    }
 }

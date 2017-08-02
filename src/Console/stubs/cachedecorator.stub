@@ -1,0 +1,9 @@
+<?php
+
+namespace DummyNamespace;
+
+use Prophets\DrupalJsonApi\Repositories\JsonApiBaseCacheDecorator;
+
+class DummyClass extends JsonApiBaseCacheDecorator
+{
+}

@@ -8,7 +8,9 @@ use Prophets\DrupalJsonApi\Repositories\RepositoryFactory;
 class DrupalJsonApiServiceProvider extends ServiceProvider
 {
     protected $commands = [
-        Console\RepositoryMakeCommand::class
+        Console\RepositoryMakeCommand::class,
+        Console\CacheDecoratorMakeCommand::class,
+        Console\InterfaceMakeCommand::class,
     ];
 
     /**
@@ -41,8 +43,10 @@ class DrupalJsonApiServiceProvider extends ServiceProvider
          */
         foreach ($repositories as $modelClass) {
             $repositoryClassName = call_user_func($modelClass . '::getRepositoryClassName');
+            $repositoryInterface = call_user_func($modelClass . '::getRepositoryInterface');
+
             $this->app->bind(
-                $repositoryClassName,
+                $repositoryInterface,
                 function () use ($repositoryFactory, $repositoryClassName, $modelClass) {
                     return $repositoryFactory->create($modelClass, $repositoryClassName);
                 }

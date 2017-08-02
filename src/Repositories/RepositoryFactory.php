@@ -58,13 +58,14 @@ class RepositoryFactory
         }
 
         if ($cacheDecorator === null) {
-            $cacheDecorator = $this->getCacheDecoratorClassName($repositoryClassName, $this->getModelName($model));
+            $cacheDecoratorClass = $this->getCacheDecoratorClassName($repositoryClassName, $this->getModelName($model));
+            $cacheDecorator = new $cacheDecoratorClass($repository);
         }
         if (! $cacheDecorator instanceof BaseRepository) {
             throw new \InvalidArgumentException('Cache Decorator must implement BaseRepository.');
         }
 
-        return new $cacheDecorator($repository);
+        return $cacheDecorator;
     }
 
     /**
@@ -72,7 +73,7 @@ class RepositoryFactory
      * @param $model
      * @return string
      */
-    protected function getModelName($model)
+    public function getModelName($model)
     {
         $modelName = is_object($model) ? get_class($model) : $model;
 
@@ -88,7 +89,7 @@ class RepositoryFactory
      * @param $modelName
      * @return string
      */
-    protected function getRepositoryClassName($modelName)
+    public function getRepositoryClassName($modelName)
     {
         return $this->getRepositoryClassNamespace($modelName) . 'JsonApi' . $modelName . 'Repository';
     }
@@ -100,14 +101,14 @@ class RepositoryFactory
      * @param string $modelName
      * @return string
      */
-    protected function getCacheDecoratorClassName($repositoryClassName, $modelName)
+    public function getCacheDecoratorClassName($repositoryClassName, $modelName)
     {
         $namespace = '';
 
         if (($pos = strrpos($repositoryClassName, '\\'))) {
             $namespace = substr($repositoryClassName, 0, $pos + 1);
         }
-        return $namespace . 'JsonApiCache' . $modelName . 'Decorator';
+        return $namespace . 'JsonApi' . $modelName . 'CacheDecorator';
     }
 
     /**
@@ -116,7 +117,7 @@ class RepositoryFactory
      * @param $modelName
      * @return string
      */
-    protected function getRepositoryClassNamespace($modelName)
+    public function getRepositoryClassNamespace($modelName)
     {
         return $this->defaultRepositoryNamespace . '\\' . $modelName . '\\';
     }
