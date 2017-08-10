@@ -79,4 +79,27 @@ class CacheDecoratorMakeCommand extends GeneratorCommand
 
         return $name;
     }
+
+    /**
+     * @inheritdoc
+     */
+    protected function buildClass($name)
+    {
+        $stub = parent::buildClass($name);
+
+        return $this->replaceInterface($stub);
+    }
+
+    /**
+     * Replace the interface.
+     *
+     * @param $stub
+     * @return mixed
+     */
+    protected function replaceInterface($stub)
+    {
+        $interface = sprintf('JsonApi%sInterface', $this->getEntityNameInput());
+
+        return str_replace('DummyInterface', $interface, $stub);
+    }
 }
