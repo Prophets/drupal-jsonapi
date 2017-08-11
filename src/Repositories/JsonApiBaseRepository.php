@@ -8,6 +8,7 @@ use Prophets\DrupalJsonApi\Contracts\BaseRelationHasMany;
 use Prophets\DrupalJsonApi\Contracts\BaseRelationMixed;
 use Prophets\DrupalJsonApi\Contracts\BaseRelationSingle;
 use Prophets\DrupalJsonApi\Contracts\BaseRepository;
+use Prophets\DrupalJsonApi\Meta;
 use Prophets\DrupalJsonApi\Request\DrupalJsonApiRequestBuilder;
 use Prophets\DrupalJsonApi\Model;
 use GuzzleHttp\Psr7\Request;
@@ -227,7 +228,6 @@ class JsonApiBaseRepository implements BaseRepository
             $relationValue = null;
 
             if (($relationship = $resource->relationship($fieldName)) !== null) {
-                $relationResource = null;
                 $resourceMap = $relationship->resourceMap();
 
                 if (count($resourceMap) > 0) {
@@ -241,7 +241,20 @@ class JsonApiBaseRepository implements BaseRepository
                             $relationship->resource(),
                             $modelRelation
                         );
+
                     }
+                    // If a relationship contains meta information,
+                    // store it in the related model 'relation_meta' attribute.
+                    Collection::make($relationValue instanceof Model ? [$relationValue] : $relationValue)
+                        ->each(function (Model $model) use ($relationship) {
+                            $meta = $relationship->resourceLinkMeta(
+                                $model->getResourceName(),
+                                $model->getId()
+                            );
+                            if (! empty($meta)) {
+                                $model->setAttribute('relation_meta', new Meta($meta));
+                            }
+                        });
                 }
             }
             if ($relationValue === null && $modelRelation instanceof BaseRelationHasMany) {
@@ -480,11 +493,6 @@ class JsonApiBaseRepository implements BaseRepository
     public function getForRelation(BaseRelation $relation)
     {
         $response = $this->executeRequest($this->newRelationRequestBuilder($relation));
-
-        if (! $response->isSuccessfulDocument([200])
-            || ! $response->document()->hasAnyPrimaryResources()) {
-            return new Collection();
-        }
 
         return $this->responseToCollection($response, $relation);
     }
