@@ -35,7 +35,7 @@ class DrupalJsonApiRequestBuilder extends JsonApiRequestBuilder
         parent::__construct($request, $serializer);
 
          $this->setHeader('Accept-Charset', 'utf-8')
-            ->setUriQueryParam('_format', 'jsonapi');
+            ->setUriQueryParam('_format', 'api_json');
     }
 
     /**
