@@ -73,13 +73,14 @@ class DrupalJsonApiRequestBuilder extends JsonApiRequestBuilder
      *
      * @param string $fieldName The path containing the dot separated field names that you wish to filter on.
      * @param null|string $operator The operator to use for comparison.
-     *      Can be =, <, >, <>, IN, NOT IN, IS NULL, IS NOT NULL or BETWEEN.
+     *      Can be =, <, >, <>, IN, NOT IN, IS NULL, IS NOT NULL, CONTAINS or BETWEEN.
      * @param null|string $value The value that you will compare against the value held in
      *      the field pointed by the path.
      * @param null|string $group The group this filter is part of.
+     * @param null|string $filterId
      * @return $this
      */
-    public function addFilter($fieldName, $operator = '=', $value = null, $group = null)
+    public function addFilter($fieldName, $operator = '=', $value = null, $group = null, $filterId = null)
     {
         $condition = [
             'path' => $fieldName
@@ -94,13 +95,25 @@ class DrupalJsonApiRequestBuilder extends JsonApiRequestBuilder
         if ($group !== null) {
             $condition['memberOf'] = $group;
         }
-        $this->filters[uniqid($fieldName)] = ['condition' => $condition];
+        if ($filterId === null) {
+            $filterId = str_replace('.', '-', $fieldName);
+            $affix = 0;
+            $filterKey = $filterId;
+
+            while (array_key_exists($filterKey, $this->filters)) {
+                $filterKey = $filterId . '_' . ++$affix;
+            }
+            $filterId = $filterKey;
+        }
+        $this->filters[$filterId] = ['condition' => $condition];
 
         return $this;
     }
 
     /**
      * Add a filter condition in shorthand style to the request filters.
+     * Note: this style of filtering is not recommended as the $fieldName is also the filter's id which needs to be
+     * unique. This way the field can only be filtered "once" in shorthand style.
      *
      * @param $fieldName
      * @param $value
