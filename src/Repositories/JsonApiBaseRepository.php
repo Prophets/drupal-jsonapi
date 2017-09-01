@@ -415,7 +415,7 @@ class JsonApiBaseRepository implements BaseRepository
     ) {
         foreach ($attributes as $key => $value) {
             if (! is_array($value)) {
-                $requestBuilder->addFilter($key, '=', $value);
+                $requestBuilder->addSimpleFilter($key, $value);
             } else {
                 call_user_func_array([$requestBuilder, 'addFilter'], $value);
             }
