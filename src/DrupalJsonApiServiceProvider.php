@@ -2,6 +2,8 @@
 
 namespace Prophets\DrupalJsonApi;
 
+use GuzzleHttp\Client;
+use GuzzleHttp\HandlerStack;
 use Illuminate\Support\ServiceProvider;
 use Prophets\DrupalJsonApi\Repositories\RepositoryFactory;
 
@@ -57,5 +59,20 @@ class DrupalJsonApiServiceProvider extends ServiceProvider
          * Register artisan commands
          */
         $this->commands($this->commands);
+
+        /**
+         * Bind our extended Guzzle client and pass any configured request option.
+         * Get HandlerStack from container to allow other service providers, e.g. guzzle-debugbar's provider
+         * to allow profiling of all requests.
+         */
+        $this->app->bind(DrupalJsonApiClient::class, function ($app) {
+            // Guzzle client
+            return new Client(
+                array_merge(
+                    ['handler' => $app->make(HandlerStack::class)],
+                    config('drupal-jsonapi.request_options', [])
+                )
+            );
+        });
     }
 }

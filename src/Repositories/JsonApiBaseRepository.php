@@ -8,6 +8,7 @@ use Prophets\DrupalJsonApi\Contracts\BaseRelationHasMany;
 use Prophets\DrupalJsonApi\Contracts\BaseRelationMixed;
 use Prophets\DrupalJsonApi\Contracts\BaseRelationSingle;
 use Prophets\DrupalJsonApi\Contracts\BaseRepository;
+use Prophets\DrupalJsonApi\DrupalJsonApiClient;
 use Prophets\DrupalJsonApi\Meta;
 use Prophets\DrupalJsonApi\Request\DrupalJsonApiRequestBuilder;
 use Prophets\DrupalJsonApi\Model;
@@ -199,7 +200,7 @@ class JsonApiBaseRepository implements BaseRepository
      */
     protected function executeRequest(DrupalJsonApiRequestBuilder $requestBuilder)
     {
-        $client = new Client(app(\GuzzleHttp\Client::class));
+        $client = new Client(app(DrupalJsonApiClient::class));
         $jsonApiClient = new JsonApiClient($client);
         $request = $requestBuilder->getRequestWithScopes();
 
