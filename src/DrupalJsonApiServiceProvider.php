@@ -65,11 +65,17 @@ class DrupalJsonApiServiceProvider extends ServiceProvider
          * Get HandlerStack from container to allow other service providers, e.g. guzzle-debugbar's provider
          * to allow profiling of all requests.
          */
-        $this->app->bind(DrupalJsonApiClient::class, function ($app) {
+        $this->app->singleton(DrupalJsonApiClient::class, function ($app) {
+            $handler = $this->app->make(HandlerStack::class);
+
+            // If handler was not initialized, do it now.
+            if (!$handler->hasHandler()) {
+                $handler = HandlerStack::create();
+            }
             // Guzzle client
             return new Client(
                 array_merge(
-                    ['handler' => $app->make(HandlerStack::class)],
+                    ['handler' => $handler],
                     config('drupal-jsonapi.request_options', [])
                 )
             );
