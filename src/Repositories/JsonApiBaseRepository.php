@@ -343,10 +343,9 @@ class JsonApiBaseRepository implements BaseRepository
                 return $field ? $field . '.' . $value : $value;
             }, $model->getIncludes()), $fields['includes']));
         }
-        if (isset($fields['fields'][$model->getResourceName()])) {
-            return $fields;
+        if ($field === null && ! isset($fields['fields'][$model->getResourceName()])) {
+            $fields['fields'][$model->getResourceName()] = $model->getFields();
         }
-        $fields['fields'][$model->getResourceName()] = $model->getFields();
 
         foreach ($model->getIncludes() as $relationField) {
             if (! method_exists($model, $relationField)) {

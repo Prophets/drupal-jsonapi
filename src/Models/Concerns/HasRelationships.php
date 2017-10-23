@@ -86,7 +86,7 @@ trait HasRelationships
     }
 
     /**
-     * @param string|array $modelClass
+     * @param string $modelClass
      * @return HasOne
      */
     public function hasOne($modelClass)
@@ -107,7 +107,7 @@ trait HasRelationships
     }
 
     /**
-     * @param string|array $modelClass
+     * @param string $modelClass
      * @return HasMany
      */
     public function hasMany($modelClass)
