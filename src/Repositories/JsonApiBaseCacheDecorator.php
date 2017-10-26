@@ -5,6 +5,7 @@ namespace Prophets\DrupalJsonApi\Repositories;
 use Illuminate\Cache\TaggableStore;
 use Prophets\DrupalJsonApi\Contracts\BaseRelation;
 use Prophets\DrupalJsonApi\Contracts\BaseRepository;
+use Prophets\DrupalJsonApi\Contracts\DrupalScope;
 use Illuminate\Cache\Repository as CacheRepository;
 use Illuminate\Config\Repository as ConfigRepository;
 
@@ -160,7 +161,7 @@ class JsonApiBaseCacheDecorator implements BaseRepository
      */
     public function getForRelation(BaseRelation $relation)
     {
-        return $this->getCacheStore()
+         return $this->getCacheStore()
             ->remember(
                 $this->getCacheIdentifier(),
                 $this->cacheTime,
@@ -195,12 +196,19 @@ class JsonApiBaseCacheDecorator implements BaseRepository
      */
     protected function formatCacheIdentifier($name, $arguments)
     {
+        $argumentIdentifier = '';
+
         if (is_array($arguments) && count($arguments)) {
-            $argumentIdentifier = '.' . md5(json_encode($arguments));
-        } else {
-            $argumentIdentifier = '';
+            $argumentIdentifier = '.' . md5(serialize($arguments));
         }
-        return "{$this->entityName}.{$name}{$argumentIdentifier}";
+        $scopes = $this->repository->getGlobalScopes();
+        $scopeIdentifier = '';
+
+        if (count($scopes)) {
+            $scopeIdentifier = '.' . md5(serialize($scopes));
+        }
+
+        return "{$this->entityName}.{$name}{$scopeIdentifier}{$argumentIdentifier}";
     }
 
     /**
