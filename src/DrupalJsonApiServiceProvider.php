@@ -49,8 +49,12 @@ class DrupalJsonApiServiceProvider extends ServiceProvider
 
             $this->app->bind(
                 $repositoryInterface,
-                function () use ($repositoryFactory, $repositoryClassName, $modelClass) {
-                    return $repositoryFactory->create($modelClass, $repositoryClassName);
+                function ($app, array $params = []) use ($repositoryFactory, $repositoryClassName, $modelClass) {
+                    return $repositoryFactory->create(
+                        $modelClass,
+                        $repositoryClassName,
+                        $params['cacheDecorator'] ?? null
+                    );
                 }
             );
         }
