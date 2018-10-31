@@ -5,6 +5,7 @@ namespace Prophets\DrupalJsonApi;
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use Illuminate\Support\ServiceProvider;
+use Prophets\DrupalJsonApi\Contracts\BaseRepository;
 use Prophets\DrupalJsonApi\Repositories\RepositoryFactory;
 
 class DrupalJsonApiServiceProvider extends ServiceProvider
@@ -37,7 +38,7 @@ class DrupalJsonApiServiceProvider extends ServiceProvider
     public function register()
     {
         $repositoryFactory = new RepositoryFactory(config('drupal-jsonapi.use_cache'));
-        $this->app->singleton(RepositoryFactory::class, $repositoryFactory);
+        $this->app->instance(RepositoryFactory::class, $repositoryFactory);
         $repositories = config('drupal-jsonapi.repository_models', []);
 
         /**
@@ -53,7 +54,7 @@ class DrupalJsonApiServiceProvider extends ServiceProvider
                     return $repositoryFactory->create(
                         $modelClass,
                         $repositoryClassName,
-                        $params['cacheDecorator'] ?? null
+                        $params
                     );
                 }
             );
@@ -69,7 +70,7 @@ class DrupalJsonApiServiceProvider extends ServiceProvider
          * Get HandlerStack from container to allow other service providers, e.g. guzzle-debugbar's provider
          * to allow profiling of all requests.
          */
-        $this->app->singleton(DrupalJsonApiClient::class, function ($app) {
+        $this->app->bind(DrupalJsonApiClient::class, function ($app, array $clientConfig = []) {
             $handler = $this->app->make(HandlerStack::class);
 
             // If handler was not initialized, do it now.
@@ -80,7 +81,8 @@ class DrupalJsonApiServiceProvider extends ServiceProvider
             return new Client(
                 array_merge(
                     ['handler' => $handler],
-                    config('drupal-jsonapi.request_options', [])
+                    config('drupal-jsonapi.request_options', []),
+                    $clientConfig
                 )
             );
         });

@@ -3,6 +3,7 @@
 namespace Prophets\DrupalJsonApi\Relations;
 
 use Prophets\DrupalJsonApi\Contracts\BaseRelationSingle;
+use Prophets\DrupalJsonApi\Contracts\BaseRepository;
 use Prophets\DrupalJsonApi\Model;
 
 abstract class HasOneManySingle extends Relation implements BaseRelationSingle
@@ -30,5 +31,13 @@ abstract class HasOneManySingle extends Relation implements BaseRelationSingle
     public function getNewModel(): Model
     {
         return new $this->modelClass;
+    }
+
+    /**
+     * @return BaseRepository
+     */
+    public function getRepository(): BaseRepository
+    {
+        return call_user_func([$this->modelClass, 'getRepository']);
     }
 }

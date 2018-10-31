@@ -34,21 +34,28 @@ class RepositoryFactory
      *
      * @param $model
      * @param null $repositoryClassName
-     * @param null|false $cacheDecorator
+     * @param array $params
+     *      'cacheDecorator'
+     *      ''
      * @return mixed
      */
-    public function create($model, $repositoryClassName = null, $cacheDecorator = null)
+    public function create($model, $repositoryClassName = null, array $params = [])
     {
         if ($repositoryClassName === null) {
             $repositoryBaseName = $this->getModelName($model);
             $repositoryClassName = $this->getRepositoryClassName($repositoryBaseName);
         }
         $modelObject = $model;
+        $cacheDecorator = null;
 
         if (is_string($modelObject)) {
             $modelObject = new $modelObject;
         }
-        $repository = new $repositoryClassName($modelObject);
+        if (isset($params['cacheDecorator'])) {
+            $cacheDecorator = $params['cacheDecorator'];
+            unset($params['cacheDecorator']);
+        }
+        $repository = new $repositoryClassName($modelObject, $params);
 
         if (! $repository instanceof BaseRepository) {
             throw new \InvalidArgumentException('Cache Decorator must implement BaseRepository.');

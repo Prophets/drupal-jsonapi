@@ -36,25 +36,44 @@ class JsonApiBaseRepository implements BaseRepository
     protected $model;
 
     /**
+     * @var Client
+     */
+    private $httpClient;
+
+    /**
      * @var string
      */
     private $apiBaseUrl;
 
     /**
+     * @var boolean
+     */
+    protected $authEnabled = false;
+
+    /**
      * JsonApiBaseRepository constructor.
      * @param Model|string $model
-     * @param null|string $apiBaseUrl
+     * @param array $params
      */
-    public function __construct(Model $model, $apiBaseUrl = null)
+    public function __construct(Model $model, array $params = [])
     {
         $this->model = is_string($model) ? new $model : $model;
 
         if (! $this->model instanceof Model) {
             throw new \InvalidArgumentException('Model must be an instance of ' . Model::class);
         }
-        $this->apiBaseUrl = $apiBaseUrl ?: config('drupal-jsonapi.base_url');
-
+        $this->setParams($params);
         $this->bootIfNotBooted();
+    }
+
+    /**
+     * Set repository parameters.
+     *
+     * @param array $params
+     */
+    protected function setParams(array $params)
+    {
+        $this->apiBaseUrl = $params['baseUrl'] ?? config('drupal-jsonapi.base_url');
     }
 
     /**
@@ -195,13 +214,33 @@ class JsonApiBaseRepository implements BaseRepository
     }
 
     /**
+     * @return Client
+     */
+    protected function getHttpClient()
+    {
+        if ($this->httpClient === null) {
+            $options = [];
+
+            if ($this->isAuthEnabled()) {
+                $user = config('drupal-jsonapi.auth.user');
+                $password = config('drupal-jsonapi.auth.password');
+
+                if (!empty($user) && !empty($password)) {
+                    $options['auth'] = [$user, $password];
+                }
+            }
+            $this->httpClient = new Client(app(DrupalJsonApiClient::class, $options));
+        }
+        return $this->httpClient;
+    }
+
+    /**
      * @param DrupalJsonApiRequestBuilder $requestBuilder
      * @return \WoohooLabs\Yang\JsonApi\Response\JsonApiResponse
      */
     protected function executeRequest(DrupalJsonApiRequestBuilder $requestBuilder)
     {
-        $client = new Client(app(DrupalJsonApiClient::class));
-        $jsonApiClient = new JsonApiClient($client);
+        $jsonApiClient = new JsonApiClient($this->getHttpClient());
         $request = $requestBuilder->getRequestWithScopes();
 
         return $jsonApiClient->sendRequest($request);
@@ -507,5 +546,23 @@ class JsonApiBaseRepository implements BaseRepository
     public function clearCache()
     {
         return true;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isAuthEnabled(): bool
+    {
+        return $this->authEnabled;
+    }
+
+    /**
+     * @param bool $authEnabled
+     * @return JsonApiBaseRepository
+     */
+    public function setAuthEnabled(bool $authEnabled): JsonApiBaseRepository
+    {
+        $this->authEnabled = $authEnabled;
+        return $this;
     }
 }
