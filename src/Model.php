@@ -11,6 +11,7 @@ abstract class Model implements ArrayAccess
     use Models\Concerns\HasAttributes;
     use Models\Concerns\HasRelationships;
     use Models\Concerns\HasExtendFields;
+    use Models\Concerns\HasMeta;
     use HasTimestamps;
 
     /**

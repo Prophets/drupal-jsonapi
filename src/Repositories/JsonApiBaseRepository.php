@@ -22,6 +22,7 @@ use WoohooLabs\Yang\JsonApi\Schema\ResourceObject;
 class JsonApiBaseRepository implements BaseRepository
 {
     use Concerns\HasGlobalScopes;
+    use Concerns\HasConsumerId;
 
     /**
      * The array of booted repositories.
@@ -259,6 +260,9 @@ class JsonApiBaseRepository implements BaseRepository
         }
         if (! $model instanceof Model) {
             throw new \RuntimeException('Not a valid Model.');
+        }
+        if ($resource->hasMeta()) {
+            $model->setMeta(new Meta($resource->meta()));
         }
         $model->populate($resource->attributes());
         $model->setId($resource->id());
