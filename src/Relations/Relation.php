@@ -5,9 +5,12 @@ namespace Prophets\DrupalJsonApi\Relations;
 use Prophets\DrupalJsonApi\Contracts\BaseRelation;
 use Prophets\DrupalJsonApi\Contracts\BaseRepository;
 use Prophets\DrupalJsonApi\Model;
+use Prophets\DrupalJsonApi\Concerns\HasMeta;
 
 abstract class Relation implements BaseRelation
 {
+    use HasMeta;
+
     /**
      * @var string
      */

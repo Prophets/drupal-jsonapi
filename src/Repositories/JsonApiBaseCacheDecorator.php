@@ -5,7 +5,6 @@ namespace Prophets\DrupalJsonApi\Repositories;
 use Illuminate\Cache\TaggableStore;
 use Prophets\DrupalJsonApi\Contracts\BaseRelation;
 use Prophets\DrupalJsonApi\Contracts\BaseRepository;
-use Prophets\DrupalJsonApi\Contracts\DrupalScope;
 use Illuminate\Cache\Repository as CacheRepository;
 use Illuminate\Config\Repository as ConfigRepository;
 

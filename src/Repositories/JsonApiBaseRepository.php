@@ -15,6 +15,8 @@ use Prophets\DrupalJsonApi\Model;
 use GuzzleHttp\Psr7\Request;
 use Http\Adapter\Guzzle6\Client;
 use Illuminate\Support\Arr;
+use Prophets\DrupalJsonApi\ResourceIdentifierCollection;
+use Prophets\DrupalJsonApi\ResourceIdentifierObject;
 use WoohooLabs\Yang\JsonApi\Client\JsonApiClient;
 use WoohooLabs\Yang\JsonApi\Response\JsonApiResponse;
 use WoohooLabs\Yang\JsonApi\Schema\ResourceObject;
@@ -267,6 +269,23 @@ class JsonApiBaseRepository implements BaseRepository
         $model->populate($resource->attributes());
         $model->setId($resource->id());
 
+        foreach ($resource->relationships() as $relationship) {
+            $resourceLinks = $relationship->resourceLinks();
+            $resourceIdentifierCollection = new ResourceIdentifierCollection();
+
+            foreach ($resourceLinks as $resourceLink) {
+                $resourceIdentifierObject = ResourceIdentifierObject::createFromResourceLink($resourceLink);
+                $resourceLinkMeta = $relationship->resourceLinkMeta($resourceIdentifierObject->type(), $resourceIdentifierObject->id());
+
+                if ($resourceLinkMeta !== null) {
+                    $resourceIdentifierObject->setMeta(new Meta($resourceLinkMeta));
+                }
+                $resourceIdentifierCollection[] = $resourceIdentifierObject;
+            }
+            if ($resourceIdentifierCollection->isNotEmpty()) {
+                $model->setRelationResourceIdentifiers($relationship->name(), $resourceIdentifierCollection);
+            }
+        }
         foreach ($model->getIncludes() as $fieldName) {
             $modelRelation = $model->$fieldName();
             $relationValue = null;
@@ -285,20 +304,7 @@ class JsonApiBaseRepository implements BaseRepository
                             $relationship->resource(),
                             $modelRelation
                         );
-
                     }
-                    // If a relationship contains meta information,
-                    // store it in the related model 'relation_meta' attribute.
-                    Collection::make($relationValue instanceof Model ? [$relationValue] : $relationValue)
-                        ->each(function (Model $model) use ($relationship) {
-                            $meta = $relationship->resourceLinkMeta(
-                                $model->getResourceName(),
-                                $model->getId()
-                            );
-                            if (! empty($meta)) {
-                                $model->setAttribute('relation_meta', new Meta($meta));
-                            }
-                        });
                 }
             }
             if ($relationValue === null && $modelRelation instanceof BaseRelationHasMany) {

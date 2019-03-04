@@ -1,10 +1,8 @@
 <?php
 
-namespace Prophets\DrupalJsonApi\Models\Concerns;
+namespace Prophets\DrupalJsonApi\Concerns;
 
-use http\Exception\InvalidArgumentException;
 use Prophets\DrupalJsonApi\Meta;
-use Prophets\DrupalJsonApi\Model;
 
 trait HasMeta
 {
@@ -17,14 +15,10 @@ trait HasMeta
      * Set the model's meta property.
      *
      * @param Meta $meta
-     *
-     * @return Model
      */
     public function setMeta(Meta $meta)
     {
         $this->meta = $meta;
-
-        return $this;
     }
 
     /**
@@ -35,7 +29,7 @@ trait HasMeta
     public function getMeta()
     {
         if (! $this->hasMeta()) {
-            throw new InvalidArgumentException('No meta object available.');
+            throw new \InvalidArgumentException("No meta object available.");
         }
         return $this->meta;
     }

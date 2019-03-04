@@ -5,7 +5,7 @@ namespace Prophets\DrupalJsonApi;
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use Illuminate\Support\ServiceProvider;
-use Prophets\DrupalJsonApi\Contracts\BaseRepository;
+use Prophets\DrupalJsonApi\Contracts\ResourceObject;
 use Prophets\DrupalJsonApi\Repositories\RepositoryFactory;
 
 class DrupalJsonApiServiceProvider extends ServiceProvider
