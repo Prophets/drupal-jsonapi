@@ -270,6 +270,9 @@ class JsonApiBaseRepository implements BaseRepository
         $model->setId($resource->id());
 
         foreach ($resource->relationships() as $relationship) {
+            if (! method_exists($model, $relationship->name())) {
+                continue;
+            }
             $resourceLinks = $relationship->resourceLinks();
             $resourceIdentifierCollection = new ResourceIdentifierCollection();
 

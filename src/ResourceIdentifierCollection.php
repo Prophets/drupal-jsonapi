@@ -8,10 +8,12 @@ use Prophets\DrupalJsonApi\Contracts\ResourceIdentifierObject;
 class ResourceIdentifierCollection extends Collection
 {
     /**
-     * @param $type
-     * @param $id
+     * Get a resource identifier by it's type and id.
      *
-     * return ResourceIdentifierObject|null
+     * @param string $type
+     * @param string $id
+     *
+     * @return ResourceIdentifierObject|null
      */
     public function find($type, $id)
     {

@@ -2,13 +2,12 @@
 
 namespace Prophets\DrupalJsonApi\Models\Concerns;
 
-use Prophets\DrupalJsonApi\Contracts\BaseRelationHasMany;
-use Prophets\DrupalJsonApi\Contracts\BaseRelationHasOne;
-use Prophets\DrupalJsonApi\Contracts\ResourceIdentifierObject;
+use Prophets\DrupalJsonApi\Collection;
 use Prophets\DrupalJsonApi\Relations\HasMany;
 use Prophets\DrupalJsonApi\Relations\HasManyMixed;
 use Prophets\DrupalJsonApi\Relations\HasOne;
 use Prophets\DrupalJsonApi\Relations\HasOneMixed;
+use Prophets\DrupalJsonApi\Relations\Relation;
 use Prophets\DrupalJsonApi\ResourceIdentifierCollection;
 
 trait HasRelationships
@@ -61,6 +60,7 @@ trait HasRelationships
 
     /**
      * Set the specific relationship in the model.
+     * Pass meta information from matching resource identifiers.
      *
      * @param  string  $relation
      * @param  mixed  $value
@@ -68,6 +68,16 @@ trait HasRelationships
      */
     public function setRelation($relation, $value)
     {
+        if (($resourceIdentifierCollection = $this->getRelationResourceIdentifiers($relation)) !== null) {
+            $resourceIdentifierCollection->filter(function ($value) {
+                return $value->hasMeta();
+            })->each(function ($resourceIdentfierObject) use ($value) {
+                if ($value instanceof Collection) {
+                    $value = $value->find($resourceIdentfierObject->type(), $resourceIdentfierObject->id());
+                }
+                $value->setMeta($resourceIdentfierObject->meta());
+            });
+        }
         $this->relations[$relation] = $value;
 
         return $this;
@@ -140,39 +150,12 @@ trait HasRelationships
 
     /**
      * @param $relation
-     * @param ResourceIdentifierObject $resourceIdentifierObject
-     */
-    public function setRelationResourceIdentifier($relation, ResourceIdentifierObject $resourceIdentifierObject)
-    {
-        if (! $this->$relation() instanceof BaseRelationHasOne) {
-            throw new \LogicException('Relationship must be of type Prophets\DrupalJsonApi\Contracts\BaseRelationHasOne');
-        }
-        $this->relationMeta[$relation] = $resourceIdentifierObject;
-    }
-
-    /**
-     * @param $relation
-     *
-     * @return null|ResourceIdentifierObject
-     */
-    public function getRelationResource($relation)
-    {
-        return $this->relationMeta[$relation] ?: null;
-    }
-
-    /**
-     * @param $relation
      * @param ResourceIdentifierCollection $resourceIdentifierCollection
      */
     public function setRelationResourceIdentifiers($relation, ResourceIdentifierCollection $resourceIdentifierCollection)
     {
-        if ($this->$relation() instanceof BaseRelationHasOne) {
-            $resourceIdentifierObject = $resourceIdentifierCollection->shift();
-            $this->setRelationResourceIdentifier($relation, $resourceIdentifierObject);
-            return;
-        }
-        if (! $this->$relation() instanceof BaseRelationHasMany) {
-            throw new \LogicException('Relationship must be of type Prophets\DrupalJsonApi\Contracts\BaseRelationHasMany');
+        if (! $this->$relation() instanceof Relation) {
+            throw new \LogicException('Relationship must be of type ' . Relation::class);
         }
         $this->relationMeta[$relation] = $resourceIdentifierCollection;
     }
@@ -180,10 +163,20 @@ trait HasRelationships
     /**
      * @param $relation
      *
+     * @return null|ResourceIdentifierObject
+     */
+    public function getRelationResourceIdentifier($relation)
+    {
+        return $this->relationMeta[$relation] ? $this->relationMeta[$relation]->first() : null;
+    }
+
+    /**
+     * @param $relation
+     *
      * @return null|ResourceIdentifierCollection
      */
-    public function getRelationResources($relation)
+    public function getRelationResourceIdentifiers($relation)
     {
-        return $this->relationMeta[$relation] ?: null;
+        return $this->relationMeta[$relation] ?? null;
     }
 }
