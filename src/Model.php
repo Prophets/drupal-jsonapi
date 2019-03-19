@@ -5,8 +5,9 @@ namespace Prophets\DrupalJsonApi;
 use ArrayAccess;
 use Illuminate\Database\Eloquent\Concerns\HasTimestamps;
 use Prophets\DrupalJsonApi\Contracts\BaseRepository;
+use Prophets\DrupalJsonApi\Contracts\HasMeta;
 
-abstract class Model implements ArrayAccess
+abstract class Model implements ArrayAccess, HasMeta
 {
     use Models\Concerns\HasAttributes;
     use Models\Concerns\HasRelationships;

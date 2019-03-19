@@ -6,8 +6,9 @@ use Prophets\DrupalJsonApi\Contracts\BaseRelation;
 use Prophets\DrupalJsonApi\Contracts\BaseRepository;
 use Prophets\DrupalJsonApi\Model;
 use Prophets\DrupalJsonApi\Concerns\HasMeta;
+use Prophets\DrupalJsonApi\Contracts\HasMeta as HasMetaContract;
 
-abstract class Relation implements BaseRelation
+abstract class Relation implements BaseRelation, HasMetaContract
 {
     use HasMeta;
 

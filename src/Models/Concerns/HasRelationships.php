@@ -3,6 +3,7 @@
 namespace Prophets\DrupalJsonApi\Models\Concerns;
 
 use Prophets\DrupalJsonApi\Collection;
+use Prophets\DrupalJsonApi\Contracts\HasMeta;
 use Prophets\DrupalJsonApi\Relations\HasMany;
 use Prophets\DrupalJsonApi\Relations\HasManyMixed;
 use Prophets\DrupalJsonApi\Relations\HasOne;
@@ -68,7 +69,7 @@ trait HasRelationships
      */
     public function setRelation($relation, $value)
     {
-        if (($resourceIdentifierCollection = $this->getRelationResourceIdentifiers($relation)) !== null) {
+        if ($value instanceof HasMeta && ($resourceIdentifierCollection = $this->getRelationResourceIdentifiers($relation)) !== null) {
             $resourceIdentifierCollection->filter(function ($value) {
                 return $value->hasMeta();
             })->each(function ($resourceIdentfierObject) use ($value) {
