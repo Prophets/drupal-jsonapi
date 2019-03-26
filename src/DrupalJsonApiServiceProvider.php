@@ -2,7 +2,6 @@
 
 namespace Prophets\DrupalJsonApi;
 
-use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use Illuminate\Support\ServiceProvider;
 use Prophets\DrupalJsonApi\Contracts\ResourceObject;
@@ -78,7 +77,7 @@ class DrupalJsonApiServiceProvider extends ServiceProvider
                 $handler = HandlerStack::create();
             }
             // Guzzle client
-            return new Client(
+            return new DrupalJsonApiClient(
                 array_merge(
                     ['handler' => $handler],
                     config('drupal-jsonapi.request_options', []),
