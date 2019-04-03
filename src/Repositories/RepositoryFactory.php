@@ -3,15 +3,10 @@
 namespace Prophets\DrupalJsonApi\Repositories;
 
 use Prophets\DrupalJsonApi\Contracts\BaseRepository;
+use Prophets\DrupalJsonApi\Contracts\RepositoryFactory as BaseRepositoryFactory;
 
-class RepositoryFactory
+class RepositoryFactory implements BaseRepositoryFactory
 {
-    /**
-     * Use cache decorators flag.
-     *
-     * @var bool
-     */
-    protected $useCache;
     /**
      * @var string
      */
@@ -20,12 +15,10 @@ class RepositoryFactory
     /**
      * RepositoryFactory constructor.
      *
-     * @param boolean $useCache
      * @param string $defaultRepositoryNamespace
      */
-    public function __construct($useCache, $defaultRepositoryNamespace = 'App')
+    public function __construct($defaultRepositoryNamespace = 'App')
     {
-        $this->useCache = (boolean) $useCache;
         $this->defaultRepositoryNamespace = $defaultRepositoryNamespace;
     }
 
@@ -36,8 +29,8 @@ class RepositoryFactory
      * @param null $repositoryClassName
      * @param array $params
      *      'cacheDecorator'
-     *      ''
-     * @return mixed
+     *      'cache'
+     * @return BaseRepository
      */
     public function create($model, $repositoryClassName = null, array $params = [])
     {
@@ -51,19 +44,19 @@ class RepositoryFactory
         if (is_string($modelObject)) {
             $modelObject = new $modelObject;
         }
-        if (isset($params['cacheDecorator'])) {
-            $cacheDecorator = $params['cacheDecorator'];
-            unset($params['cacheDecorator']);
-        }
+        $cacheDecorator = $params['cacheDecorator'] ?? null;
+        $caching = $params['caching'] ?? $cacheDecorator !== false;
+        unset($params['cacheDecorator']);
+        unset($params['cache']);
+
         $repository = new $repositoryClassName($modelObject, $params);
 
         if (! $repository instanceof BaseRepository) {
-            throw new \InvalidArgumentException('Cache Decorator must implement BaseRepository.');
+            throw new \InvalidArgumentException('Repository must implement BaseRepository.');
         }
-        if (! $this->useCache || $cacheDecorator === false) {
+        if ($caching === false) {
             return $repository;
         }
-
         if ($cacheDecorator === null) {
             $cacheDecoratorClass = $this->getCacheDecoratorClassName($repositoryClassName, $this->getModelName($model));
             $cacheDecorator = new $cacheDecoratorClass($repository);

@@ -4,7 +4,8 @@ namespace Prophets\DrupalJsonApi;
 
 use GuzzleHttp\HandlerStack;
 use Illuminate\Support\ServiceProvider;
-use Prophets\DrupalJsonApi\Contracts\ResourceObject;
+use Prophets\DrupalJsonApi\Contracts\RepositoryModels;
+use Prophets\DrupalJsonApi\Contracts\RepositoryFactory as RepositoryFactoryContract;
 use Prophets\DrupalJsonApi\Repositories\RepositoryFactory;
 
 class DrupalJsonApiServiceProvider extends ServiceProvider
@@ -27,6 +28,8 @@ class DrupalJsonApiServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../config/drupal-jsonapi.php' => config_path('drupal-jsonapi.php'),
         ]);
+
+        app(DrupalJsonApi::class)->boot();
     }
 
     /**
@@ -36,28 +39,9 @@ class DrupalJsonApiServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $repositoryFactory = new RepositoryFactory(config('drupal-jsonapi.use_cache'));
-        $this->app->instance(RepositoryFactory::class, $repositoryFactory);
-        $repositories = config('drupal-jsonapi.repository_models', []);
-
-        /**
-         * Register repositories from config.
-         */
-        foreach ($repositories as $modelClass) {
-            $repositoryClassName = call_user_func($modelClass . '::getRepositoryClassName');
-            $repositoryInterface = call_user_func($modelClass . '::getRepositoryInterface');
-
-            $this->app->bind(
-                $repositoryInterface,
-                function ($app, array $params = []) use ($repositoryFactory, $repositoryClassName, $modelClass) {
-                    return $repositoryFactory->create(
-                        $modelClass,
-                        $repositoryClassName,
-                        $params
-                    );
-                }
-            );
-        }
+        $this->app->bind(RepositoryFactoryContract::class, RepositoryFactory::class);
+        $this->app->bind(RepositoryModels::class, RepositoryModelCollection::class);
+        $this->app->singleton(DrupalJsonApi::class);
 
         /**
          * Register artisan commands
