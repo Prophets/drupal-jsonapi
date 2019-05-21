@@ -55,7 +55,7 @@ class DrupalJsonApi
          * Illuminate\Container\Container
          */
         $container = app();
-        $params = [
+        $defaultParams = [
           'caching' => config('drupal-jsonapi.use_cache')
         ];
 
@@ -65,11 +65,11 @@ class DrupalJsonApi
 
             $container->bind(
                 $repositoryInterface,
-                function ($app) use ($repositoryClassName, $modelClass, $params) {
+                function ($app, $params) use ($repositoryClassName, $modelClass, $defaultParams) {
                     return $this->repositoryFactory->create(
                         $modelClass,
                         $repositoryClassName,
-                        $params
+                        array_merge($defaultParams, $params)
                     );
                 }
             );

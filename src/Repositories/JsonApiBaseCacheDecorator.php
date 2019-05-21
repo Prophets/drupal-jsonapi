@@ -195,19 +195,24 @@ class JsonApiBaseCacheDecorator implements BaseRepository
      */
     protected function formatCacheIdentifier($name, $arguments)
     {
-        $argumentIdentifier = '';
+        $identifier = '';
 
         if (is_array($arguments) && count($arguments)) {
-            $argumentIdentifier = '.' . md5(serialize($arguments));
+            $identifier .= serialize($arguments);
         }
         $scopes = $this->repository->getGlobalScopes();
-        $scopeIdentifier = '';
 
         if (count($scopes)) {
-            $scopeIdentifier = '.' . md5(serialize($scopes));
+            $identifier .= serialize($scopes);
+        }
+        if ($this->repository->isAuthEnabled()) {
+            $identifier .= 'authEnabled';
+        }
+        if ($this->repository->isWithoutIncludes()) {
+            $identifier .= 'withoutIncludes';
         }
 
-        return "{$this->entityName}.{$name}{$scopeIdentifier}{$argumentIdentifier}";
+        return "{$this->entityName}.{$name}." . sha1($identifier);
     }
 
     /**

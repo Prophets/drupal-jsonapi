@@ -54,6 +54,11 @@ class JsonApiBaseRepository implements BaseRepository
     protected $authEnabled = false;
 
     /**
+     * @var boolean
+     */
+    protected $withoutIncludes = false;
+
+    /**
      * JsonApiBaseRepository constructor.
      * @param Model|string $model
      * @param array $params
@@ -77,6 +82,13 @@ class JsonApiBaseRepository implements BaseRepository
     protected function setParams(array $params)
     {
         $this->apiBaseUrl = $params['baseUrl'] ?? config('drupal-jsonapi.base_url');
+
+        if (isset($params['authEnabled'])) {
+            $this->setAuthEnabled($params['authEnabled']);
+        }
+        if (isset($params['withoutIncludes'])) {
+            $this->setWithoutIncludes($params['withoutIncludes']);
+        }
     }
 
     /**
@@ -160,7 +172,10 @@ class JsonApiBaseRepository implements BaseRepository
         }
         $resourceFields = $this->getResourceFields($this->model);
         $requestBuilder->setJsonApiFields($resourceFields['fields']);
-        $requestBuilder->setJsonApiIncludes($resourceFields['includes']);
+
+        if (count($resourceFields['includes'])) {
+            $requestBuilder->setJsonApiIncludes($resourceFields['includes']);
+        }
 
         return $requestBuilder;
     }
@@ -200,7 +215,10 @@ class JsonApiBaseRepository implements BaseRepository
             throw new \RuntimeException('Relation is not implemented.');
         }
         $requestBuilder->setJsonApiFields($resourceFields['fields']);
-        $requestBuilder->setJsonApiIncludes($resourceFields['includes']);
+
+        if (count($resourceFields['includes'])) {
+            $requestBuilder->setJsonApiIncludes($resourceFields['includes']);
+        }
 
         return $requestBuilder;
     }
@@ -388,36 +406,37 @@ class JsonApiBaseRepository implements BaseRepository
                 'includes' => []
             ];
         }
-        if (! $field || ! array_first($fields['includes'], function ($value) use ($field) {
-            return starts_with($value, $field . '.');
-        })) {
-            $fields['includes'] = array_unique(array_merge(array_map(function ($value) use ($field) {
-                return $field ? $field . '.' . $value : $value;
-            }, $model->getIncludes()), $fields['includes']));
+        if (! $this->isWithoutIncludes()) {
+            if (! $field || ! array_first($fields['includes'], function ($value) use ($field) {
+                    return starts_with($value, $field . '.');
+                })) {
+                $fields['includes'] = array_unique(array_merge(array_map(function ($value) use ($field) {
+                    return $field ? $field . '.' . $value : $value;
+                }, $model->getIncludes()), $fields['includes']));
+            }
+            foreach ($model->getIncludes() as $relationField) {
+                if (! method_exists($model, $relationField)) {
+                    continue;
+                }
+                $relation = $model->$relationField();
+
+                if ($relation instanceof BaseRelation) {
+                    $relationModels = $relation instanceof BaseRelationMixed ? array_map(function ($modelClass) {
+                        return new $modelClass;
+                    }, $relation->getClassList()) : [$relation->getNewModel()];
+
+                    foreach ($relationModels as $relationModel) {
+                        $this->getResourceFields(
+                            $relationModel,
+                            ($field ? $field . '.' . $relationField : $relationField),
+                            $fields
+                        );
+                    }
+                }
+            }
         }
         if ($field === null && ! isset($fields['fields'][$model->getResourceName()])) {
             $fields['fields'][$model->getResourceName()] = $model->getFields();
-        }
-
-        foreach ($model->getIncludes() as $relationField) {
-            if (! method_exists($model, $relationField)) {
-                continue;
-            }
-            $relation = $model->$relationField();
-
-            if ($relation instanceof BaseRelation) {
-                $relationModels = $relation instanceof BaseRelationMixed ? array_map(function ($modelClass) {
-                    return new $modelClass;
-                }, $relation->getClassList()) : [$relation->getNewModel()];
-
-                foreach ($relationModels as $relationModel) {
-                    $this->getResourceFields(
-                        $relationModel,
-                        ($field ? $field . '.' . $relationField : $relationField),
-                        $fields
-                    );
-                }
-            }
         }
 
         return $fields;
@@ -576,6 +595,24 @@ class JsonApiBaseRepository implements BaseRepository
     public function setAuthEnabled(bool $authEnabled): JsonApiBaseRepository
     {
         $this->authEnabled = $authEnabled;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isWithoutIncludes(): bool
+    {
+        return $this->withoutIncludes;
+    }
+
+    /**
+     * @param bool $withoutIncludes
+     * @return JsonApiBaseRepository
+     */
+    public function setWithoutIncludes(bool $withoutIncludes): JsonApiBaseRepository
+    {
+        $this->withoutIncludes = (bool) $withoutIncludes;
         return $this;
     }
 }
