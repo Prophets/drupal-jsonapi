@@ -263,7 +263,7 @@ abstract class Model implements ArrayAccess, HasMeta
     public function getId(): string
     {
         if (empty($this->id)) {
-            throw new \RuntimeException('Trying to get uuid from a resource that is not loaded yet.');
+            throw new \RuntimeException('Trying to get id from a resource that is not loaded yet.');
         }
         return $this->id;
     }

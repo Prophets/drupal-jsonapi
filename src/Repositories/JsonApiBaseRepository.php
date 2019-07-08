@@ -63,7 +63,7 @@ class JsonApiBaseRepository implements BaseRepository
      * @param Model|string $model
      * @param array $params
      */
-    public function __construct(Model $model, array $params = [])
+    public function __construct($model, array $params = [])
     {
         $this->model = is_string($model) ? new $model : $model;
 
@@ -193,7 +193,6 @@ class JsonApiBaseRepository implements BaseRepository
         $requestBuilder->setUri(
             $this->getResourceUriForModel($relatedModel)
             . '/' . $relatedModel->getId()
-            . '/' . $relation->getName()
         );
 
         foreach ($this->getGlobalScopes() as $id => $scope) {
@@ -207,10 +206,10 @@ class JsonApiBaseRepository implements BaseRepository
                 if (! $model instanceof Model) {
                     throw new \InvalidArgumentException('Model class must be instance of ' . Model::class);
                 }
-                $this->getResourceFields($model, null, $resourceFields);
+                $this->getResourceFields($model, $relation->getName(), $resourceFields);
             }
         } elseif ($relation instanceof BaseRelationSingle) {
-            $resourceFields = $this->getResourceFields($relation->getNewModel());
+            $resourceFields = $this->getResourceFields($relation->getNewModel(), $relation->getName());
         } else {
             throw new \RuntimeException('Relation is not implemented.');
         }
@@ -407,14 +406,9 @@ class JsonApiBaseRepository implements BaseRepository
             ];
         }
         if (! $this->isWithoutIncludes()) {
-            if (! $field || ! array_first($fields['includes'], function ($value) use ($field) {
-                    return starts_with($value, $field . '.');
-                })) {
-                $fields['includes'] = array_unique(array_merge(array_map(function ($value) use ($field) {
-                    return $field ? $field . '.' . $value : $value;
-                }, $model->getIncludes()), $fields['includes']));
-            }
-            foreach ($model->getIncludes() as $relationField) {
+            $includes = $model->getIncludes();
+
+            foreach ($includes as $relationField) {
                 if (! method_exists($model, $relationField)) {
                     continue;
                 }
@@ -434,8 +428,14 @@ class JsonApiBaseRepository implements BaseRepository
                     }
                 }
             }
+            if ($field !== null && !in_array($field, $fields['includes'])
+                && ! array_first($fields['includes'], function ($value) use ($field) {
+                    return starts_with($value, $field . '.');
+                })) {
+                $fields['includes'][] = $field;
+            }
         }
-        if ($field === null && ! isset($fields['fields'][$model->getResourceName()])) {
+        if (! isset($fields['fields'][$model->getResourceName()])) {
             $fields['fields'][$model->getResourceName()] = $model->getFields();
         }
 
@@ -467,12 +467,11 @@ class JsonApiBaseRepository implements BaseRepository
      */
     protected function responseToCollection(JsonApiResponse $response, $relation = null)
     {
-        if (! $response->isSuccessfulDocument([200])
-            || ! $response->document()->hasAnyPrimaryResources()) {
+        if (! $response->isSuccessfulDocument([200])) {
             return new Collection();
         }
 
-        return $this->mapResourcesToCollection($response->document()->primaryResources(), $relation);
+        return $this->mapResourcesToCollection($relation ? $response->document()->includedResources() : $response->document()->primaryResources(), $relation);
     }
 
     /**
@@ -556,7 +555,7 @@ class JsonApiBaseRepository implements BaseRepository
     public function getByIds(array $ids)
     {
         $requestBuilder = $this->newRequestBuilder();
-        $requestBuilder->addFilter('uuid', 'IN', $ids);
+        $requestBuilder->addFilter('id', 'IN', $ids);
         $response = $this->executeRequest($requestBuilder);
 
         return $this->responseToCollection($response);
