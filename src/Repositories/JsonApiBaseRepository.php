@@ -143,7 +143,7 @@ class JsonApiBaseRepository implements BaseRepository
      */
     protected function newRequestBuilderWithoutScopes()
     {
-        $requestBuilder = new DrupalJsonApiRequestBuilder((new Request('', '')));
+        $requestBuilder = new DrupalJsonApiRequestBuilder((new Request('GET', '')));
         $requestBuilder
             ->setProtocolVersion('1.1')
             ->setMethod('GET');
