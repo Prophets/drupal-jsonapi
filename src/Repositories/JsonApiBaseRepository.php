@@ -17,6 +17,7 @@ use Http\Adapter\Guzzle6\Client;
 use Illuminate\Support\Arr;
 use Prophets\DrupalJsonApi\ResourceIdentifierCollection;
 use Prophets\DrupalJsonApi\ResourceIdentifierObject;
+use Prophets\DrupalJsonApi\Scopes\LanguageScope;
 use WoohooLabs\Yang\JsonApi\Client\JsonApiClient;
 use WoohooLabs\Yang\JsonApi\Response\JsonApiResponse;
 use WoohooLabs\Yang\JsonApi\Schema\ResourceObject;
@@ -157,10 +158,13 @@ class JsonApiBaseRepository implements BaseRepository
      * @param string $path
      * @return DrupalJsonApiRequestBuilder
      */
-    protected function newRequestBuilder($path = '')
+    protected function newRequestBuilder($path = '', $locale = null)
     {
         $requestBuilder = $this->newRequestBuilderWithoutScopes();
         $uri = $this->getResourceUriForModel($this->model);
+
+        $langCall = $locale ?? $this->getGlobalScope(LanguageScope::class)->getLocale();
+        $uri = str_replace(':lang', $langCall, $uri);
 
         if (! empty($path)) {
             $uri .= '/' . $path;
@@ -170,6 +174,7 @@ class JsonApiBaseRepository implements BaseRepository
         foreach ($this->getGlobalScopes() as $id => $scope) {
             $requestBuilder->withGlobalScope($id, $scope);
         }
+
         $resourceFields = $this->getResourceFields($this->model);
         $requestBuilder->setJsonApiFields($resourceFields['fields']);
 

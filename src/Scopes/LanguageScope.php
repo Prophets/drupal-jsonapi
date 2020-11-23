@@ -32,6 +32,10 @@ class LanguageScope implements DrupalScope
      */
     public function apply(DrupalJsonApiRequestBuilder $requestBuilder)
     {
-        $requestBuilder->setUriQueryParam('lang_code', $this->locale);
+    }
+
+    public function getLocale()
+    {
+        return $this->locale;
     }
 }
